@@ -1,127 +1,165 @@
-// অফিশিয়াল লেজার ডেটাসেট (সঠিক সামারি ডেটা অনুযায়ী)
-const defaultLedgerData = {
+// আপনার অফিশিয়াল লেজার ডেটাসেট (প্রতিটি কোম্পানির স্টেটমেন্ট টেবিলসহ)
+const defaultCorporateData = {
     dealerCode: "DEAL002905",
-    dealerName: "S.R ELECTRONICS PARK, CHUADANGA",
     companies: {
-        parks: { name: "PARKS (S.R. Park)", opening: 323077.20, debit: 228469.40, credit: 551546.60 },
-        ele:   { name: "ELE (Minister Hi-Tech)", opening: 773125.50, debit: 3082821.90, credit: 2545773.00 },
-        myone: { name: "MYONE Electronics", opening: 319575.00, debit: 904747.00, credit: 555005.00 }
-    },
-    logs: []
+        parks: {
+            name: "PARKS (S.R. Park Statement)",
+            openingBalance: 323077.20,
+            transactions: [
+                { date: "2026-07-01", particulars: "Opening Balance Brought Forward", debit: 0, credit: 0 },
+                { date: "2026-07-05", particulars: "Bill Invoice #P-1042", debit: 228469.40, credit: 0 },
+                { date: "2026-07-20", particulars: "Bank Deposit / Payment Collection", debit: 0, credit: 551546.60 }
+            ]
+        },
+        ele: {
+            name: "ELE (Minister Hi-Tech Statement)",
+            openingBalance: 773125.50,
+            transactions: [
+                { date: "2026-07-01", particulars: "Opening Balance Brought Forward", debit: 0, credit: 0 },
+                { date: "2026-07-10", particulars: "Official Goods Supply Bill", debit: 3082821.90, credit: 0 },
+                { date: "2026-07-25", particulars: "Dealer Payment / Collection Adjustment", debit: 0, credit: 2545773.00 }
+            ]
+        },
+        myone: {
+            name: "MYONE Electronics Statement",
+            openingBalance: 319575.00,
+            transactions: [
+                { date: "2026-07-01", particulars: "Opening Balance Brought Forward", debit: 0, credit: 0 },
+                { date: "2026-07-12", particulars: "Invoice Bill #M-8890", debit: 904747.00, credit: 0 },
+                { date: "2026-07-28", particulars: "Remittance / Payment Received", debit: 0, credit: 555005.00 }
+            ]
+        }
+    }
 };
 
-// লোকালস্টোরেজ থেকে ডাটা লোড বা ডিফল্ট ডাটা ইনিশিয়ালাইজেশন
-let sovereignLedger = JSON.parse(localStorage.getItem('sovereignLedgerData')) || defaultLedgerData;
+let currentCompany = 'parks';
+let appState = JSON.parse(localStorage.getItem('sovereignCorporateLedger')) || defaultCorporateData;
 
-// ম্যানুয়াল পেমেন্ট কনফার্মেশন ও লেজার আপডেট করার লজিক
-function handleManualPayment() {
-    const compKey = document.getElementById('selCompany').value;
-    const type = document.getElementById('selType').value;
+// কোম্পানি ট্যাব পরিবর্তনের ফাংশন
+function switchCompany(compKey) {
+    currentCompany = compKey;
+    
+    // ট্যাবের স্টাইল আপডেট
+    ['parks', 'ele', 'myone'].forEach(key => {
+        const btn = document.getElementById(`tab-${key}`);
+        if(key === compKey) {
+            btn.className = "px-4 py-2 text-xs font-bold rounded-lg transition bg-blue-600 text-white shadow";
+        } else {
+            btn.className = "px-4 py-2 text-xs font-bold rounded-lg transition bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800";
+        }
+    });
+
+    renderPortal();
+}
+
+// নতুন এন্ট্রি যোগ করার ফাংশন (যাতে টেবিল এবং সামারি উভয় দিক একসাথে আপডেট হয়)
+function addNewLedgerEntry() {
+    const date = document.getElementById('inpDate').value || new Date().toISOString().split('T')[0];
+    const particulars = document.getElementById('inpParticulars').value.trim();
+    const type = document.getElementById('inpType').value;
     const amount = parseFloat(document.getElementById('inpAmount').value);
 
-    if (!amount || amount <= 0) {
-        alert("দয়া করে সঠিক টাকার পরিমাণ লিখুন!");
+    if (!particulars || isNaN(amount) || amount <= 0) {
+        alert("দয়া করে সঠিক বিবরণ এবং টাকার পরিমাণ লিখুন!");
         return;
     }
 
-    // নির্দিষ্ট কোম্পানির ডেবিট বা ক্রেডিট আপডেট করা
-    if (type === 'Credit') {
-        sovereignLedger.companies[compKey].credit += amount;
-    } else {
-        sovereignLedger.companies[compKey].debit += amount;
-    }
+    let debit = type === 'debit' ? amount : 0;
+    let credit = type === 'credit' ? amount : 0;
 
-    // ট্রানজ্যাকশন লগ যুক্ত করা
-    sovereignLedger.logs.unshift({
-        date: new Date().toLocaleDateString('en-GB'),
-        company: sovereignLedger.companies[compKey].name,
-        type: type,
-        amount: amount.toLocaleString('en-IN', {minimumFractionDigits: 2})
+    // নির্দিষ্ট কোম্পানির ট্রানজ্যাকশন লিস্টে পুশ করা
+    appState.companies[currentCompany].transactions.push({
+        date: date,
+        particulars: particulars,
+        debit: debit,
+        credit: credit
     });
 
-    // লোকালস্টোরেজে সেভ এবং ইউআই রিফ্রেশ
-    saveAndRefresh();
+    // লোকালস্টোরেজে সেভ এবং দুদিক সিংক করা
+    saveAndSync();
+
+    // ইনপুট ফিল্ড খালি করা
+    document.getElementById('inpParticulars').value = '';
     document.getElementById('inpAmount').value = '';
-    alert("সফলভাবে পেমেন্ট কনফার্ম করা হয়েছে এবং লেজার আপডেট হয়েছে!");
+    alert("এন্ট্রি সফলভাবে পোস্ট হয়েছে এবং উভয় দিকে সিংক সম্পন্ন হয়েছে!");
 }
 
-// ডাটা রিসেট করার ফাংশন
-function resetLedgerData() {
-    if (confirm("আপনি কি নিশ্চিতভাবে সমস্ত কাস্টম ওভাররাইড রিসেট করে অফিশিয়াল বেসলাইনে ফিরে যেতে চান?")) {
-        sovereignLedger = JSON.parse(JSON.stringify(defaultLedgerData));
-        saveAndRefresh();
-        alert("সিস্টেম সফলভাবে অফিশিয়াল বেসলাইন লেজারে ফিরে এসেছে।");
+// বেসলাইনে রিসেট করার ফাংশন
+function resetLedgerToDefault() {
+    if (confirm("আপনি কি সমস্ত ডাটা রিসেট করে অফিশিয়াল বেসলাইনে ফিরে যেতে চান?")) {
+        appState = JSON.parse(JSON.stringify(defaultCorporateData));
+        saveAndSync();
+        alert("সিস্টেম সফলভাবে রিসেট হয়েছে।");
     }
 }
 
-// লোকালস্টোরেজে সেভ করার হেল্পার
-function saveAndRefresh() {
-    localStorage.setItem('sovereignLedgerData', JSON.stringify(sovereignLedger));
-    updateDashboardUI();
+// লোকালস্টোরেজ সেভ ও রেন্ডার ট্রিগার
+function saveAndSync() {
+    localStorage.setItem('sovereignCorporateLedger', JSON.stringify(appState));
+    renderPortal();
 }
 
-// ড্যাশবোর্ড সামারি এবং কোম্পানি ব্রেকডাউন রেন্ডার করার মাস্টার ফাংশন
-function updateDashboardUI() {
-    let totalOpening = 0;
+// মাস্টার রেন্ডার ইঞ্জিন (টেবিল ও সামারি দুদিকেই রানিং ব্যালেন্স আপডেট করে)
+function renderPortal() {
+    let compData = appState.companies[currentCompany];
+    document.getElementById('activeCompanyName').innerText = compData.name;
+
+    let runningBalance = compData.openingBalance;
     let totalDebit = 0;
     let totalCredit = 0;
 
-    let companyCardsHTML = '';
+    let tableHTML = `
+        <tr class="bg-slate-950/60 font-semibold">
+            <td class="p-3">-</td>
+            <td class="p-3 text-white">Opening Balance Brought Forward</td>
+            <td class="p-3 text-right">-</td>
+            <td class="p-3 text-right">-</td>
+            <td class="p-3 text-right text-amber-400">৳ ${runningBalance.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+        </tr>
+    `;
 
-    for (let key in sovereignLedger.companies) {
-        let comp = sovereignLedger.companies[key];
-        totalOpening += comp.opening;
-        totalDebit += comp.debit;
-        totalCredit += comp.credit;
+    compData.transactions.forEach(tx => {
+        totalDebit += tx.debit;
+        totalCredit += tx.credit;
+        // ফর্মুলা: রানিং ব্যালেন্স = আগের ব্যালেন্স + ডেবিট - ক্রেডিট
+        runningBalance = (runningBalance + tx.debit) - tx.credit;
 
-        let compBalance = (comp.opening + comp.debit) - comp.credit;
-
-        companyCardsHTML += `
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2 shadow">
-                <h3 class="text-xs font-bold text-white border-b border-slate-800 pb-2">${comp.name}</h3>
-                <div class="text-[11px] space-y-1 text-slate-300">
-                    <p class="flex justify-between"><span>Opening:</span> <span class="font-semibold text-white">৳ ${comp.opening.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></p>
-                    <p class="flex justify-between"><span>Debit:</span> <span class="font-semibold text-blue-400">৳ ${comp.debit.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></p>
-                    <p class="flex justify-between"><span>Credit:</span> <span class="font-semibold text-emerald-400">৳ ${comp.credit.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></p>
-                    <p class="flex justify-between border-t border-slate-800/80 pt-1 font-bold"><span>Balance:</span> <span class="text-amber-400">৳ ${compBalance.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></p>
-                </div>
-            </div>
+        tableHTML += `
+            <tr class="hover:bg-slate-950/40 transition">
+                <td class="p-3 text-slate-400">${tx.date}</td>
+                <td class="p-3 text-white font-medium">${tx.particulars}</td>
+                <td class="p-3 text-right text-blue-400">${tx.debit > 0 ? '৳ ' + tx.debit.toLocaleString('en-IN', {minimumFractionDigits: 2}) : '-'}</td>
+                <td class="p-3 text-right text-emerald-400">${tx.credit > 0 ? '৳ ' + tx.credit.toLocaleString('en-IN', {minimumFractionDigits: 2}) : '-'}</td>
+                <td class="p-3 text-right font-semibold text-amber-300">৳ ${runningBalance.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+            </tr>
         `;
-    }
+    });
 
-    // মাস্টার ফর্মুলা: Opening + Debit - Credit = Balance
-    let totalBalance = (totalOpening + totalDebit) - totalCredit;
+    document.getElementById('ledgerTableBody').innerHTML = tableHTML;
 
-    // টপ সামারি কার্ডে মান বসানো
-    document.getElementById('sumOpening').innerText = '৳ ' + totalOpening.toLocaleString('en-IN', {minimumFractionDigits: 2});
-    document.getElementById('sumDebit').innerText = '৳ ' + totalDebit.toLocaleString('en-IN', {minimumFractionDigits: 2});
-    document.getElementById('sumCredit').innerText = '৳ ' + totalCredit.toLocaleString('en-IN', {minimumFractionDigits: 2});
-    document.getElementById('sumBalance').innerText = '৳ ' + totalBalance.toLocaleString('en-IN', {minimumFractionDigits: 2});
+    // মাস্টার কম্বাইন্ড সামারি হিসাব (সব কোম্পানির ওপর ভিত্তি করে)
+    let masterOpeningSum = 0;
+    let masterDebitSum = 0;
+    let masterCreditSum = 0;
 
-    // কোম্পানি কার্ড রেন্ডার করা
-    document.getElementById('companyCardsContainer').innerHTML = companyCardsHTML;
-
-    // ট্রানজ্যাকশন টেবিল রেন্ডার করা
-    const tbody = document.getElementById('logTableBody');
-    if (sovereignLedger.logs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-500">No manual overrides recorded yet. System running on baseline official ledger.</td></tr>`;
-    } else {
-        tbody.innerHTML = '';
-        sovereignLedger.logs.forEach(log => {
-            tbody.innerHTML += `
-                <tr class="hover:bg-slate-950/50 transition">
-                    <td class="p-3">${log.date}</td>
-                    <td class="p-3 font-semibold text-white">${log.company}</td>
-                    <td class="p-3">${log.type}</td>
-                    <td class="p-3 font-semibold ${log.type === 'Credit' ? 'text-emerald-400' : 'text-blue-400'}">${log.amount}</td>
-                    <td class="p-3"><span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px]">OVERRIDDEN</span></td>
-                </tr>
-            `;
+    for (let key in appState.companies) {
+        let c = appState.companies[key];
+        masterOpeningSum += c.openingBalance;
+        c.transactions.forEach(t => {
+            masterDebitSum += t.debit;
+            masterCreditSum += t.credit;
         });
     }
+
+    let masterFinalBalance = (masterOpeningSum + masterDebitSum) - masterCreditSum;
+
+    document.getElementById('masterOpening').innerText = '৳ ' + masterOpeningSum.toLocaleString('en-IN', {minimumFractionDigits: 2});
+    document.getElementById('masterDebit').innerText = '৳ ' + masterDebitSum.toLocaleString('en-IN', {minimumFractionDigits: 2});
+    document.getElementById('masterCredit').innerText = '৳ ' + masterCreditSum.toLocaleString('en-IN', {minimumFractionDigits: 2});
+    document.getElementById('masterBalance').innerText = '৳ ' + masterFinalBalance.toLocaleString('en-IN', {minimumFractionDigits: 2});
 }
 
 // পেজ লোড হওয়ার সাথে সাথে রান হবে
 window.onload = function() {
-    updateDashboardUI();
+    renderPortal();
 };

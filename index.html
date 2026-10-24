@@ -16,7 +16,7 @@
                 <h1 class="text-2xl font-bold text-white flex items-center gap-2">
                     🏢 Sovereign Enterprise Portal
                 </h1>
-                <p class="text-xs text-slate-400 mt-1">S.R. Electronics Park (Dealer ID: DEAL002905) | Absolute Financial Source of Truth</p>
+                <p class="text-xs text-slate-400 mt-1">S.R. Electronics Park (Dealer ID: DEAL002905) | Master Financial Reconciliation Gateway</p>
             </div>
             <div>
                 <span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs px-3 py-1 rounded-full font-semibold">
@@ -27,55 +27,65 @@
 
         <!-- Combined Summary KPI Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
                 <p class="text-xs text-slate-400 uppercase tracking-wider">Total Op. Balance</p>
                 <p id="sumOpening" class="text-2xl font-bold text-white mt-1">৳ 1,415,777.70</p>
                 <p class="text-[10px] text-slate-500 mt-1">Parks + Ele + MyOne</p>
             </div>
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
                 <p class="text-xs text-slate-400 uppercase tracking-wider">Total Debit (Bills)</p>
                 <p id="sumDebit" class="text-2xl font-bold text-blue-400 mt-1">৳ 4,216,038.30</p>
                 <p class="text-[10px] text-slate-500 mt-1">Official Invoices</p>
             </div>
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
                 <p class="text-xs text-slate-400 uppercase tracking-wider">Total Credit (Payments)</p>
                 <p id="sumCredit" class="text-2xl font-bold text-emerald-400 mt-1">৳ 3,110,828.00</p>
                 <p class="text-[10px] text-slate-500 mt-1">Collections & Adjustments</p>
             </div>
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
                 <p class="text-xs text-slate-400 uppercase tracking-wider">Final Closing Balance</p>
                 <p id="sumBalance" class="text-2xl font-bold text-amber-400 mt-1">৳ 2,520,988.00</p>
-                <p class="text-[10px] text-slate-500 mt-1">Sovereign Net Payable</p>
+                <p class="text-[10px] text-slate-500 mt-1">Op + Debit - Credit</p>
             </div>
         </div>
 
-        <!-- Manual Payment Confirmation Gateway -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+        <!-- Company-wise Breakdown Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="companyCardsContainer">
+            <!-- Dynamically populated via script.js -->
+        </div>
+
+        <!-- Manual Payment Confirmation & Override Gateway -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 shadow-lg">
             <h2 class="text-base font-semibold text-white border-b border-slate-800 pb-3 flex items-center gap-2">
                 ✍️ Sovereign Manual Payment Confirmation Gateway
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                <select id="selCompany" class="bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-white">
+                <select id="selCompany" class="bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-blue-500">
                     <option value="parks">PARKS (S.R. Park)</option>
                     <option value="ele">ELE (Minister Hi-Tech)</option>
                     <option value="myone">MYONE Electronics</option>
                 </select>
-                <select id="selType" class="bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-white">
+                <select id="selType" class="bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-blue-500">
                     <option value="Credit">Credit (Payment / Collection)</option>
                     <option value="Debit">Debit (New Bill / Invoice)</option>
                 </select>
-                <input type="number" id="inpAmount" placeholder="Enter Amount (BDT)" class="bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-white">
-                <button onclick="handleManualPayment()" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs py-3 rounded-lg transition">
-                    Confirm & Override Ledger
+                <input type="number" id="inpAmount" placeholder="Enter Amount (BDT)" class="bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-blue-500">
+                <button onclick="handleManualPayment()" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs py-3 rounded-lg transition shadow">
+                    Confirm & Update Ledger
                 </button>
             </div>
         </div>
 
         <!-- Transaction History Trail -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
-            <h2 class="text-base font-semibold text-white border-b border-slate-800 pb-3">
-                📑 Sovereign Override & Transaction Log
-            </h2>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 shadow-lg">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h2 class="text-base font-semibold text-white">
+                    📑 Sovereign Override & Transaction Log
+                </h2>
+                <button onclick="resetLedgerData()" class="text-xs bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-500/30 px-3 py-1.5 rounded transition">
+                    Reset Baseline Data
+                </button>
+            </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs">
                     <thead>

@@ -1,4 +1,4 @@
-// এস.আর. ইলেকট্রনিক্স পার্ক - অফিশিয়াল কম্বাইন্ড সামারি ডেটাবেজ
+// এস.আর. ইলেকট্রনিক্স পার্ক - অফিশিয়াল কম্বাইন্ড সামারি ডেটাবেজ (ভার্সন ২ - ফ্রেশ রিসেট)
 let sovereignLedger = {
     dealerCode: "DEAL002905",
     dealerName: "S.R ELECTRONICS PARK, CHUADANGA",
@@ -10,9 +10,11 @@ let sovereignLedger = {
     logs: []
 };
 
-// লোকালস্টোরেজ থেকে ডাটা লোড করা (যদি আগে কিছু সেভ হয়ে থাকে)
-if (localStorage.getItem('sovereignCombinedLedger')) {
-    sovereignLedger = JSON.parse(localStorage.getItem('sovereignCombinedLedger'));
+// নতুন স্টোরেজ কি, যাতে পুরোনো কোনো ক্যাশ বা ডেটা আটকে না থাকে
+const STORAGE_KEY = 'sovereignCombinedLedger_v2';
+
+if (localStorage.getItem(STORAGE_KEY)) {
+    sovereignLedger = JSON.parse(localStorage.getItem(STORAGE_KEY));
 }
 
 // পেমেন্ট কনফার্ম ও লেজার ওভাররাইড করার মূল ফাংশন
@@ -42,7 +44,7 @@ function handleManualPayment() {
     });
 
     // ডাটা সেভ ও ইউআই আপডেট
-    localStorage.setItem('sovereignCombinedLedger', JSON.stringify(sovereignLedger));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sovereignLedger));
     updateDashboardUI();
     
     document.getElementById('inpAmount').value = '';

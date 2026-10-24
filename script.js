@@ -1,18 +1,18 @@
-// অফিশিয়াল লেজার ডাটাবেজ (আপনার দেওয়া পিডিএফ ও কম্বাইন্ড সামারি রিপোর্ট অনুযায়ী)
+// এস.আর. ইলেকট্রনিক্স পার্ক - অফিশিয়াল কম্বাইন্ড সামারি ডেটাবেজ
 let sovereignLedger = {
     dealerCode: "DEAL002905",
     dealerName: "S.R ELECTRONICS PARK, CHUADANGA",
-    companies: {
-        parks: { opening: 323077.20, debit: 228469.40, credit: 551546.60 },
-        ele:   { opening: 773125.50, debit: 3082821.90, credit: 2545773.00 },
-        myone: { opening: 319575.00, debit: 904747.00, credit: 555005.00 }
+    summary: {
+        opening: 1415777.70,
+        debit: 4216038.30,
+        credit: 3110828.00
     },
     logs: []
 };
 
-// লোকালস্টোরেজ থেকে ডাটা লোড করা (যদি থাকে)
-if (localStorage.getItem('sovereignLedgerData')) {
-    sovereignLedger = JSON.parse(localStorage.getItem('sovereignLedgerData'));
+// লোকালস্টোরেজ থেকে ডাটা লোড করা (যদি আগে কিছু সেভ হয়ে থাকে)
+if (localStorage.getItem('sovereignCombinedLedger')) {
+    sovereignLedger = JSON.parse(localStorage.getItem('sovereignCombinedLedger'));
 }
 
 // পেমেন্ট কনফার্ম ও লেজার ওভাররাইড করার মূল ফাংশন
@@ -26,11 +26,11 @@ function handleManualPayment() {
         return;
     }
 
-    // হিসাব আপডেট করা
+    // কম্বাইন্ড সামারিতে ডেবিট বা ক্রেডিট আপডেট করা
     if (type === 'Credit') {
-        sovereignLedger.companies[compKey].credit += amount;
+        sovereignLedger.summary.credit += amount;
     } else {
-        sovereignLedger.companies[compKey].debit += amount;
+        sovereignLedger.summary.debit += amount;
     }
 
     // লগ যুক্ত করা
@@ -42,7 +42,7 @@ function handleManualPayment() {
     });
 
     // ডাটা সেভ ও ইউআই আপডেট
-    localStorage.setItem('sovereignLedgerData', JSON.stringify(sovereignLedger));
+    localStorage.setItem('sovereignCombinedLedger', JSON.stringify(sovereignLedger));
     updateDashboardUI();
     
     document.getElementById('inpAmount').value = '';
@@ -51,18 +51,11 @@ function handleManualPayment() {
 
 // ড্যাশবোর্ড সামারি হিসাব ও ইউআই রেন্ডার
 function updateDashboardUI() {
-    let totalOpening = 0;
-    let totalDebit = 0;
-    let totalCredit = 0;
+    let totalOpening = sovereignLedger.summary.opening;
+    let totalDebit = sovereignLedger.summary.debit;
+    let totalCredit = sovereignLedger.summary.credit;
 
-    for (let key in sovereignLedger.companies) {
-        let comp = sovereignLedger.companies[key];
-        totalOpening += comp.opening;
-        totalDebit += comp.debit;
-        totalCredit += comp.credit;
-    }
-
-    // ফর্মুলা: Opening + Debit - Credit = Balance
+    // সূত্র: Opening + Debit - Credit = Balance
     let totalBalance = (totalOpening + totalDebit) - totalCredit;
 
     // UI এ মান বসানো
